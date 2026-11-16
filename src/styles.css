@@ -997,6 +997,112 @@ button:focus-visible { outline: 3px solid #aaa1ff; outline-offset: 3px; }
   }
 }
 
+
+.coaching-description {
+  margin: 12px 0 22px;
+  line-height: 1.6;
+}
+
+.personalized-insight {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.insight-summary {
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--surface-secondary, #f8f9fc);
+  border: 1px solid var(--border-color, #e8eaf0);
+}
+
+.insight-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.insight-section-title h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.insight-summary .insight-section-title {
+  justify-content: flex-start;
+}
+
+.insight-summary p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-secondary, #64748b);
+}
+
+.improvement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.improvement-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid var(--border-color, #e8eaf0);
+  border-radius: 12px;
+  background: var(--card-bg, #fff);
+}
+
+.improvement-number {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--surface-secondary, #f1f3f8);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary, #64748b);
+}
+
+.improvement-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.improvement-content h4 {
+  margin: 2px 0 6px;
+  font-size: 13px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.improvement-item p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-secondary, #64748b);
+}
+
+@media (max-width: 600px) {
+  .insight-summary {
+    padding: 14px;
+  }
+
+  .improvement-item {
+    padding: 12px;
+  }
+}
+
+
 .profile-settings {
   display: grid;
   gap: 20px;

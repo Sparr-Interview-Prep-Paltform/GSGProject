@@ -19,7 +19,7 @@ const navItems = [
   { label: 'Job descriptions', icon: BriefcaseBusiness },
   { label: 'Skill Roadmap', icon: Map },
   { label: 'Interview history', icon: History },
-  // { label: 'Profile & settings', icon: Settings },
+  { label: 'Profile & settings', icon: Settings },
 ];
 
 const interviews = [
@@ -81,6 +81,7 @@ const [interviewsLoading, setInterviewsLoading] = useState(true);
 const [interviewsError, setInterviewsError] = useState('');
 
 const [latestEstimatedScore, setLatestEstimatedScore] = useState(null);
+const [latestPerformanceReport, setLatestPerformanceReport] = useState(null);
 
 const [finalReport, setFinalReport] = useState(null);
 const [reportLoading, setReportLoading] = useState(false);
@@ -95,6 +96,8 @@ const [historyError, setHistoryError] = useState('');
 
 const [averageScore, setAverageScore] = useState(null);
 const [averageScoreCount, setAverageScoreCount] = useState(0);
+
+const [failedInterviewId, setFailedInterviewId] = useState(null);
 
   const getAuthHeaders = () => {
     const token = sessionStorage.getItem('sparr_token');
@@ -191,6 +194,7 @@ const fetchFinalReport = async (interviewId) => {
       }
 
       const report = result.data ?? result;
+      console.log('LATEST PERFORMANCE REPORT:', report);
    console.log('REPORT ANALYSIS:', {
   interviewId,
   overall_score: report.overall_score,
@@ -279,9 +283,12 @@ useEffect(() => {
     const latestCompletedInterview = recentInterviews.find(
       interview => interview.status?.toLowerCase() === 'completed'
     );
+    console.log('LATEST COMPLETED INTERVIEW:', latestCompletedInterview);
 
     if (!latestCompletedInterview) {
       setLatestEstimatedScore(null);
+        setLatestPerformanceReport(null);
+
       return;
     }
 
@@ -295,13 +302,17 @@ useEffect(() => {
       );
 
       const result = await response.json();
-
+console.log('LATEST REPORT API RESPONSE:', {
+  status: response.status,
+  result,
+});
       if (!response.ok) {
         setLatestEstimatedScore(null);
         return;
       }
 
       const report = result.data ?? result;
+      setLatestPerformanceReport(report);
       const score = Number(report.overall_score);
 
       setLatestEstimatedScore(
@@ -313,7 +324,7 @@ useEffect(() => {
       setLatestEstimatedScore(null);
     }
   };
-
+console.log('RECENT INTERVIEWS:', recentInterviews);
   if (recentInterviews.length > 0) {
     fetchLatestEstimatedScore();
   } else {
@@ -402,81 +413,182 @@ useEffect(() => {
   let cancelled = false;
   let timer;
 
-  const fetchInterviewQuestions = async () => {
-    try {
-      setQuestionsLoading(true);
-      setQuestionsError('');
+//   const fetchInterviewQuestions = async () => {
+//     try {
+//       setQuestionsLoading(true);
+//       setQuestionsError('');
 
-      const response = await fetch(
-        `${API_BASE_URL}/interviews/${createdInterview.id}/questions`,
-        {
-          method: 'GET',
-          headers: getAuthHeaders(),
-        }
-      );
+//       const response = await fetch(
+//         `${API_BASE_URL}/interviews/${createdInterview.id}/questions`,
+//         {
+//           method: 'GET',
+//           headers: getAuthHeaders(),
+//         }
+//       );
 
-      const result = await response.json().catch(() => ({}));
+//       const result = await response.json().catch(() => ({}));
 
-      if (cancelled) return;
+//       if (cancelled) return;
 
-      // Interview is still being prepared
-      if (
-        response.status === 202 ||
-        result.interview_status === 'preparing'
-      ) {
-        setCreatedInterview(current => ({
-          ...current,
-          status: 'preparing',
-        }));
+//       // Interview is still being prepared
+//       if (
+//         response.status === 202 ||
+//         result.interview_status === 'preparing'
+//       ) {
+//         setCreatedInterview(current => ({
+//           ...current,
+//           status: 'preparing',
+//         }));
 
-        timer = window.setTimeout(fetchInterviewQuestions, 2000);
-        return;
+//         timer = window.setTimeout(fetchInterviewQuestions, 2000);
+//         return;
+//       }
+
+//       if (!response.ok) {
+//         throw new Error(
+//           result.message || `Could not load questions (${response.status}).`
+//         );
+//       }
+
+//       // if (result.interview_status === 'failed') {
+//       //   throw new Error('Interview question generation failed.');
+//       // }
+//       if (result.interview_status === 'failed') {
+//   setCreatedInterview(current => ({
+//     ...current,
+//     status: 'failed',
+//   }));
+
+//   setFailedInterviewId(createdInterview.id);
+
+//   throw new Error('Interview question generation failed.');
+// }
+
+
+//       if (
+//   result.interview_status === 'ready' ||
+//   result.interview_status === 'in_progress'
+// ) {
+//   const questions = Array.isArray(result.data) ? result.data : [];
+
+//   setInterviewQuestions(questions);
+
+//   setCreatedInterview(current => ({
+//     ...current,
+//     status: result.interview_status,
+//   }));
+
+//   setQuestionsLoading(false);
+
+//   // Fetch the first question only after questions are ready
+//   if (questions.length > 0) {
+//     await fetchNextQuestion(createdInterview.id);
+//   }
+
+//   return;
+// }
+
+//       throw new Error('Unexpected interview status.');
+//     } catch (err) {
+//       if (cancelled) return;
+
+//       setQuestionsError(
+//         err.message || 'Could not load interview questions.'
+//       );
+//       setQuestionsLoading(false);
+//     }
+//   };
+
+const fetchInterviewQuestions = async () => {
+  try {
+    setQuestionsLoading(true);
+    setQuestionsError('');
+
+    const response = await fetch(
+      `${API_BASE_URL}/interviews/${createdInterview.id}/questions`,
+      {
+        method: 'GET',
+        headers: getAuthHeaders(),
       }
+    );
 
-      if (!response.ok) {
-        throw new Error(
-          result.message || `Could not load questions (${response.status}).`
-        );
-      }
+    const result = await response.json().catch(() => ({}));
 
-      if (result.interview_status === 'failed') {
-        throw new Error('Interview question generation failed.');
-      }
+    if (cancelled) return;
 
+    // Interview is still being prepared
+    if (
+      response.status === 202 ||
+      result.interview_status === 'preparing'
+    ) {
+      setCreatedInterview(current => ({
+        ...current,
+        status: 'preparing',
+      }));
 
-      if (
-  result.interview_status === 'ready' ||
-  result.interview_status === 'in_progress'
-) {
-  const questions = Array.isArray(result.data) ? result.data : [];
-
-  setInterviewQuestions(questions);
-
-  setCreatedInterview(current => ({
-    ...current,
-    status: result.interview_status,
-  }));
-
-  setQuestionsLoading(false);
-
-  // Fetch the first question only after questions are ready
-  if (questions.length > 0) {
-    await fetchNextQuestion(createdInterview.id);
-  }
-
-  return;
-}
-
-      throw new Error('Unexpected interview status.');
-    } catch (err) {
-      if (cancelled) return;
-
-      setQuestionsError(
-        err.message || 'Could not load interview questions.'
-      );
-      setQuestionsLoading(false);
+      timer = window.setTimeout(fetchInterviewQuestions, 2000);
+      return;
     }
-  };
+
+    // Interview question generation failed
+    if (result.interview_status === 'failed') {
+      setCreatedInterview(current => ({
+        ...current,
+        status: 'failed',
+      }));
+
+      setFailedInterviewId(createdInterview.id);
+
+      throw new Error(
+        result.message || 'Interview question generation failed.'
+      );
+    }
+
+    // Handle other HTTP errors
+    if (!response.ok) {
+      throw new Error(
+        result.message ||
+        `Could not load questions (${response.status}).`
+      );
+    }
+
+    // Questions are ready
+    if (
+      result.interview_status === 'ready' ||
+      result.interview_status === 'in_progress'
+    ) {
+      const questions = Array.isArray(result.data)
+        ? result.data
+        : [];
+
+      setInterviewQuestions(questions);
+
+      setCreatedInterview(current => ({
+        ...current,
+        status: result.interview_status,
+      }));
+
+      setQuestionsLoading(false);
+
+      if (questions.length > 0) {
+        await fetchNextQuestion(createdInterview.id);
+      }
+
+      return;
+    }
+
+    throw new Error('Unexpected interview status.');
+
+  } catch (err) {
+    if (cancelled) return;
+
+    setQuestionsError(
+      err.message || 'Could not load interview questions.'
+    );
+
+    setQuestionsLoading(false);
+  }
+};
 
   fetchInterviewQuestions();
 
@@ -484,7 +596,8 @@ useEffect(() => {
     cancelled = true;
     window.clearTimeout(timer);
   };
-}, [createdInterview?.id]);
+// }, [createdInterview?.id]);
+}, [createdInterview?.id, createdInterview?.status]);
 
   const fetchResumeDetails = async (resumeId) => {
   if (!resumeId) return;
@@ -897,7 +1010,64 @@ const handleSubmitAnswer = async () => {
 
 
 
-  const handleStartInterview = async () => {
+//   const handleStartInterview = async () => {
+//   if (!selectedResume || !selectedJobId) {
+//     announce('Please select a resume and a job description.');
+//     return;
+//   }
+
+//   if (!gapAnalysis) {
+//     announce('Please analyze the skill gap before starting.');
+//     return;
+//   }
+
+//   setInterviewCreating(true);
+//   setInterviewError('');
+//   setQuestionsError('');
+
+//   try {
+//     const response = await fetch(`${API_BASE_URL}/interviews`, {
+//       method: 'POST',
+//       headers: {
+//         ...getAuthHeaders(),
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify({
+//         resume_id: selectedResume,
+//         job_description_id: selectedJobId,
+//       }),
+//     });
+
+//     const data = await response.json().catch(() => ({}));
+
+//     if (!response.ok) {
+//       throw new Error(
+//         data.message || `Could not create interview (${response.status}).`
+//       );
+//     }
+
+//     setCreatedInterview(data.data);
+//     setInterviewQuestions([]);
+//     setQuestionNumber(1);
+//     setInterviewCompleted(false);
+//     setCurrentQuestion(null);
+//     setCurrentAnswer('');
+
+
+//     announce('Interview created successfully!');
+//   } catch (err) {
+//     const message = err instanceof TypeError
+//       ? `Could not connect to the backend at ${API_BASE_URL}.`
+//       : err.message || 'Could not create interview.';
+
+//     setInterviewError(message);
+//   } finally {
+//     setInterviewCreating(false);
+//   }
+// };
+
+
+const handleStartInterview = async () => {
   if (!selectedResume || !selectedJobId) {
     announce('Please select a resume and a job description.');
     return;
@@ -911,6 +1081,7 @@ const handleSubmitAnswer = async () => {
   setInterviewCreating(true);
   setInterviewError('');
   setQuestionsError('');
+  setFailedInterviewId(null);
 
   try {
     const response = await fetch(`${API_BASE_URL}/interviews`, {
@@ -933,13 +1104,17 @@ const handleSubmitAnswer = async () => {
       );
     }
 
-    setCreatedInterview(data.data);
+    const interview = data.data;
+
+    setCreatedInterview(interview);
     setInterviewQuestions([]);
     setQuestionNumber(1);
     setInterviewCompleted(false);
     setCurrentQuestion(null);
     setCurrentAnswer('');
 
+    // Keep the interview ID in case question generation fails.
+    setFailedInterviewId(interview.status === 'failed' ? interview.id : null);
 
     announce('Interview created successfully!');
   } catch (err) {
@@ -953,6 +1128,58 @@ const handleSubmitAnswer = async () => {
   }
 };
 
+
+const handleRetryInterview = async () => {
+  if (!failedInterviewId) {
+    setInterviewError('Interview ID is missing. Please try again later.');
+    return;
+  }
+
+  setInterviewCreating(true);
+  setInterviewError('');
+  setQuestionsError('');
+
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/interviews/${failedInterviewId}/retry`,
+      {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      }
+    );
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        result.message || `Retry failed (${response.status}).`
+      );
+    }
+
+   setCreatedInterview(prev => ({
+  ...prev,
+  status: 'preparing',
+}));
+
+setFailedInterviewId(null);
+setQuestionsLoading(true);
+setQuestionsError('');
+
+setInterviewQuestions([]);
+setCurrentQuestion(null);
+setCurrentAnswer('');
+
+announce('Question generation has been restarted!');
+  } catch (err) {
+    setInterviewError(
+      err instanceof TypeError
+        ? `Could not connect to the backend at ${API_BASE_URL}.`
+        : err.message || 'Could not retry question generation.'
+    );
+  } finally {
+    setInterviewCreating(false);
+  }
+};
 
 
 const handleAnalyzeSkills = async () => {
@@ -1298,7 +1525,7 @@ if (hasResume && !hasJobDescription) {
     </span>
   </div>
 
-  <div className="stat-value">
+  <div className="stat-value" style={{fontSize:'24px'}}>
     {completedInterviewsCount}
     <span className="stat-small"> sessions</span>
   </div>
@@ -1316,7 +1543,7 @@ if (hasResume && !hasJobDescription) {
       <span className="stat-icon"><Sparkles size={17} /></span>
     </div>
    
-    <div className="stat-value">
+    <div className="stat-value" style={{fontSize:'24px'}}>
   {latestEstimatedScore !== null
     ? latestEstimatedScore
     : '—'}
@@ -1340,7 +1567,7 @@ if (hasResume && !hasJobDescription) {
     </span>
   </div>
 
-  <div className="focus-title">
+  <div>
     {currentFocus.title}
   </div>
 
@@ -1353,7 +1580,7 @@ if (hasResume && !hasJobDescription) {
 
                   
           <section className="insights-grid">
-  <div className="card performance-card">
+  {/* <div className="card performance-card">
     <div className="card-heading">
       <div>
         <div className="section-kicker">PERFORMANCE</div>
@@ -1376,9 +1603,87 @@ if (hasResume && !hasJobDescription) {
     <div className="chart-footer">
       <span className="muted">Your interview scores will be tracked here.</span>
     </div>
+  </div> */}
+  <div className="card performance-card">
+  <div className="card-heading">
+    <div>
+      <div className="section-kicker">PERFORMANCE</div>
+      <h2>Latest completed performance</h2>
+    </div>
+
+    <span className="soft-tag">
+      {latestPerformanceReport ? 'Report available' : 'No reports yet'}
+    </span>
   </div>
 
-  <div className="card coaching-card">
+  {latestPerformanceReport ? (
+    <>
+      <div className="performance-overview">
+        <div className="performance-score">
+          <span className="muted">Overall score</span>
+
+          <div className="stat-value">
+            {latestPerformanceReport.overall_score}
+            <span className="stat-denom">/100</span>
+          </div>
+        </div>
+
+        <div className="performance-summary">
+          <h3>Performance summary</h3>
+          <p className="muted">
+            {latestPerformanceReport.summary || 'No summary available.'}
+          </p>
+        </div>
+      </div>
+
+      <div className="performance-dimensions">
+        <h3>Performance breakdown</h3>
+
+        {latestPerformanceReport.dimensions?.map((item) => (
+          <div className="dimension-item" key={item.dimension}>
+            <div className="dimension-header">
+              <strong>
+                {item.dimension.replaceAll('_', ' ')}
+              </strong>
+
+              <span>{item.score}/100</span>
+            </div>
+
+            <div className="dimension-progress">
+              <div
+                className="dimension-progress-fill"
+                style={{ width: `${item.score}%` }}
+              />
+            </div>
+
+            <p className="muted">{item.evidence}</p>
+          </div>
+        ))}
+      </div>
+    </>
+  ) : (
+    <div className="empty-performance">
+      <div className="empty-chart-icon">
+        <ChartNoAxesColumnIncreasing size={28} />
+      </div>
+
+      <h3>No completed interviews yet</h3>
+
+      <p className="muted">
+        Your performance breakdown will appear here after you complete
+        your first interview.
+      </p>
+    </div>
+  )}
+
+  <div className="chart-footer">
+    <span className="muted">
+      Your interview scores will be tracked here.
+    </span>
+  </div>
+</div>
+
+  {/* <div className="card coaching-card">
     <div className="coaching-header">
       <div className="coaching-icon">
         <Sparkles size={18} />
@@ -1408,7 +1713,101 @@ if (hasResume && !hasJobDescription) {
     >
       Start an interview <ArrowRight size={15} />
     </button>
+  </div> */}
+  
+<div className="card coaching-card">
+  <div className="coaching-header">
+    <div className="coaching-icon">
+      <Sparkles size={18} />
+    </div>
+
+    <div>
+      <div className="section-kicker">PERSONALIZED INSIGHT</div>
+      <h2>Your personal feedback</h2>
+    </div>
   </div>
+
+  <p className="muted coaching-description">
+    Personalized recommendations based on your interview performance.
+  </p>
+
+  {latestPerformanceReport ? (
+    <div className="personalized-insight">
+
+      <div className="insight-summary">
+        <div className="insight-section-title">
+          <Sparkles size={17} />
+          <h3>Interview feedback</h3>
+        </div>
+
+        <p>{latestPerformanceReport.summary}</p>
+      </div>
+
+      <div className="insight-improvements">
+        <div className="insight-section-title">
+          <h3>Areas to improve</h3>
+          <span className="soft-tag">
+            {latestPerformanceReport.improvement_areas?.length ||
+              latestPerformanceReport.dimensions?.filter(
+                item => item.score < 70
+              ).length || 0} areas
+          </span>
+        </div>
+
+        <div className="improvement-list">
+          {latestPerformanceReport.improvement_areas?.length > 0 ? (
+            latestPerformanceReport.improvement_areas.map((area, index) => (
+              <div className="improvement-item" key={index}>
+                <div className="improvement-number">
+                  {String(index + 1).padStart(2, '0')}
+                </div>
+                <p>
+                  {typeof area === 'string'
+                    ? area
+                    : area.description || area.name || JSON.stringify(area)}
+                </p>
+              </div>
+            ))
+          ) : (
+            latestPerformanceReport.dimensions
+              ?.filter(item => item.score < 70)
+              .map((item, index) => (
+                <div className="improvement-item" key={item.dimension}>
+                  <div className="improvement-number">
+                    {String(index + 1).padStart(2, '0')}
+                  </div>
+
+                  <div className="improvement-content">
+                    <h4>
+                      {item.dimension.replaceAll('_', ' ')}
+                    </h4>
+                    <p>{item.evidence}</p>
+                  </div>
+                </div>
+              ))
+          )}
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div className="empty-insight">
+      <Sparkles size={22} />
+      <h3>Insights are coming soon</h3>
+      <p className="muted">
+        Complete an interview to receive feedback on your strengths
+        and areas for improvement.
+      </p>
+    </div>
+  )}
+
+  <button
+    className="outline-button"
+    onClick={() => setActive('New interview')}
+  >
+    Start an interview <ArrowRight size={15} />
+  </button>
+</div>
+
 </section>
 
          
@@ -2002,7 +2401,7 @@ if (hasResume && !hasJobDescription) {
       <Sparkles size={24} />
     </div>
 
-    <h2>
+    {/* <h2>
       {createdInterview.status === 'ready'
         ? 'Your interview is ready!'
         : 'Preparing your interview...'}
@@ -2012,7 +2411,22 @@ if (hasResume && !hasJobDescription) {
       {createdInterview.status === 'ready'
         ? 'Answer the questions below to practice for your target role.'
         : 'Sparr is generating your personalized interview questions.'}
-    </p>
+    </p> */}
+    <h2>
+  {createdInterview.status === 'ready'
+    ? 'Your interview is ready!'
+    : createdInterview.status === 'failed'
+      ? 'Question generation failed'
+      : 'Preparing your interview...'}
+</h2>
+
+<p className="muted">
+  {createdInterview.status === 'ready'
+    ? 'Answer the questions below to practice for your target role.'
+    : createdInterview.status === 'failed'
+      ? 'We could not generate your questions. Please try again.'
+      : 'Sparr is generating your personalized interview questions.'}
+</p>
 
     {questionsLoading && (
       <p className="muted">Loading interview questions...</p>
@@ -2027,8 +2441,11 @@ if (hasResume && !hasJobDescription) {
 
     <button
       className="primary-button"
-      onClick={handleStartInterview}
-      disabled={interviewCreating}
+      // onClick={handleStartInterview}
+      // disabled={interviewCreating}
+            onClick={handleRetryInterview}
+        disabled={interviewCreating || !failedInterviewId}
+
     >
       {interviewCreating ? 'Trying again...' : 'Try Again'}
       <ArrowRight size={16} />
