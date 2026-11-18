@@ -1488,7 +1488,7 @@ if (hasResume && !hasJobDescription) {
                 {item.dimension.replaceAll('_', ' ')}
               </strong>
 
-              <span>{item.score}/100</span>
+              <span>{item.score}/5</span>
             </div>
 
             <div className="dimension-progress">
