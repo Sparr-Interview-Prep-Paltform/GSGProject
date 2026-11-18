@@ -6,7 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import {
   LayoutDashboard, FileText, BriefcaseBusiness, History, Settings,Map,
   BookOpen, Plus, ArrowUpRight, ArrowRight, Menu, X, ChevronRight,
-  CircleCheck, LockKeyhole, Sparkles, Search, Pencil, Trash2, Building2, XCircle
+  CircleCheck, LockKeyhole, Sparkles, Search, Pencil, Trash2, Building2, XCircle,ArrowLeft
 } from 'lucide-react';
 
 const API_BASE_URL = (
@@ -150,7 +150,8 @@ const completedCount = completedInterviewss.length;
 
 const fetchFinalReport = async (interviewId) => {
   try {
-    setShowReportModal(true);
+    // setShowReportModal(true);
+    setActive('report');
     setReportLoading(true);
     setReportError('');
     setFinalReport(null);
@@ -278,59 +279,65 @@ if (currentUser && active === 'Dashboard') {
 }
 }, [currentUser, active]);
 
+
 useEffect(() => {
   const fetchLatestEstimatedScore = async () => {
-    const latestCompletedInterview = recentInterviews.find(
+    const completedInterviews = recentInterviews.filter(
       interview => interview.status?.toLowerCase() === 'completed'
     );
-    console.log('LATEST COMPLETED INTERVIEW:', latestCompletedInterview);
 
-    if (!latestCompletedInterview) {
-      setLatestEstimatedScore(null);
-        setLatestPerformanceReport(null);
+    setLatestEstimatedScore(null);
+    setLatestPerformanceReport(null);
 
-      return;
-    }
+    for (const interview of completedInterviews) {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/interviews/${interview.id}/report`,
+          {
+            method: 'GET',
+            headers: getAuthHeaders(),
+          }
+        );
 
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/interviews/${latestCompletedInterview.id}/report`,
-        {
-          method: 'GET',
-          headers: getAuthHeaders(),
+        const result = await response.json().catch(() => ({}));
+
+        console.log(`REPORT FOR INTERVIEW #${interview.id}:`, {
+          status: response.status,
+          result,
+        });
+
+        if (!response.ok) {
+          continue;
         }
-      );
 
-      const result = await response.json();
-console.log('LATEST REPORT API RESPONSE:', {
-  status: response.status,
-  result,
-});
-      if (!response.ok) {
-        setLatestEstimatedScore(null);
+        const report = result.data ?? result;
+        const score = Number(report.overall_score);
+
+        if (!Number.isFinite(score)) {
+          continue;
+        }
+
+        setLatestPerformanceReport(report);
+        setLatestEstimatedScore(score);
+
         return;
+      } catch (error) {
+        console.error(
+          `Report error for interview #${interview.id}:`,
+          error
+        );
       }
-
-      const report = result.data ?? result;
-      setLatestPerformanceReport(report);
-      const score = Number(report.overall_score);
-
-      setLatestEstimatedScore(
-        Number.isFinite(score) ? score : null
-      );
-
-    } catch (error) {
-      console.error('Latest estimated score error:', error);
-      setLatestEstimatedScore(null);
     }
   };
-console.log('RECENT INTERVIEWS:', recentInterviews);
+
   if (recentInterviews.length > 0) {
     fetchLatestEstimatedScore();
   } else {
     setLatestEstimatedScore(null);
+    setLatestPerformanceReport(null);
   }
 }, [recentInterviews]);
+
 
 
 
@@ -413,91 +420,6 @@ useEffect(() => {
   let cancelled = false;
   let timer;
 
-//   const fetchInterviewQuestions = async () => {
-//     try {
-//       setQuestionsLoading(true);
-//       setQuestionsError('');
-
-//       const response = await fetch(
-//         `${API_BASE_URL}/interviews/${createdInterview.id}/questions`,
-//         {
-//           method: 'GET',
-//           headers: getAuthHeaders(),
-//         }
-//       );
-
-//       const result = await response.json().catch(() => ({}));
-
-//       if (cancelled) return;
-
-//       // Interview is still being prepared
-//       if (
-//         response.status === 202 ||
-//         result.interview_status === 'preparing'
-//       ) {
-//         setCreatedInterview(current => ({
-//           ...current,
-//           status: 'preparing',
-//         }));
-
-//         timer = window.setTimeout(fetchInterviewQuestions, 2000);
-//         return;
-//       }
-
-//       if (!response.ok) {
-//         throw new Error(
-//           result.message || `Could not load questions (${response.status}).`
-//         );
-//       }
-
-//       // if (result.interview_status === 'failed') {
-//       //   throw new Error('Interview question generation failed.');
-//       // }
-//       if (result.interview_status === 'failed') {
-//   setCreatedInterview(current => ({
-//     ...current,
-//     status: 'failed',
-//   }));
-
-//   setFailedInterviewId(createdInterview.id);
-
-//   throw new Error('Interview question generation failed.');
-// }
-
-
-//       if (
-//   result.interview_status === 'ready' ||
-//   result.interview_status === 'in_progress'
-// ) {
-//   const questions = Array.isArray(result.data) ? result.data : [];
-
-//   setInterviewQuestions(questions);
-
-//   setCreatedInterview(current => ({
-//     ...current,
-//     status: result.interview_status,
-//   }));
-
-//   setQuestionsLoading(false);
-
-//   // Fetch the first question only after questions are ready
-//   if (questions.length > 0) {
-//     await fetchNextQuestion(createdInterview.id);
-//   }
-
-//   return;
-// }
-
-//       throw new Error('Unexpected interview status.');
-//     } catch (err) {
-//       if (cancelled) return;
-
-//       setQuestionsError(
-//         err.message || 'Could not load interview questions.'
-//       );
-//       setQuestionsLoading(false);
-//     }
-//   };
 
 const fetchInterviewQuestions = async () => {
   try {
@@ -1007,66 +929,6 @@ const handleSubmitAnswer = async () => {
   };
 
 
-
-
-
-//   const handleStartInterview = async () => {
-//   if (!selectedResume || !selectedJobId) {
-//     announce('Please select a resume and a job description.');
-//     return;
-//   }
-
-//   if (!gapAnalysis) {
-//     announce('Please analyze the skill gap before starting.');
-//     return;
-//   }
-
-//   setInterviewCreating(true);
-//   setInterviewError('');
-//   setQuestionsError('');
-
-//   try {
-//     const response = await fetch(`${API_BASE_URL}/interviews`, {
-//       method: 'POST',
-//       headers: {
-//         ...getAuthHeaders(),
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({
-//         resume_id: selectedResume,
-//         job_description_id: selectedJobId,
-//       }),
-//     });
-
-//     const data = await response.json().catch(() => ({}));
-
-//     if (!response.ok) {
-//       throw new Error(
-//         data.message || `Could not create interview (${response.status}).`
-//       );
-//     }
-
-//     setCreatedInterview(data.data);
-//     setInterviewQuestions([]);
-//     setQuestionNumber(1);
-//     setInterviewCompleted(false);
-//     setCurrentQuestion(null);
-//     setCurrentAnswer('');
-
-
-//     announce('Interview created successfully!');
-//   } catch (err) {
-//     const message = err instanceof TypeError
-//       ? `Could not connect to the backend at ${API_BASE_URL}.`
-//       : err.message || 'Could not create interview.';
-
-//     setInterviewError(message);
-//   } finally {
-//     setInterviewCreating(false);
-//   }
-// };
-
-
 const handleStartInterview = async () => {
   if (!selectedResume || !selectedJobId) {
     announce('Please select a resume and a job description.');
@@ -1388,6 +1250,9 @@ if (hasResume && !hasJobDescription) {
         </aside>
 
         <main className="main-content">
+        {/* <button onClick={() => fetchFinalReport(50)}>
+                   test
+          </button> */}
           {active === 'Dashboard' ? <>
           <div className="page-heading">
             <div>
@@ -1580,30 +1445,7 @@ if (hasResume && !hasJobDescription) {
 
                   
           <section className="insights-grid">
-  {/* <div className="card performance-card">
-    <div className="card-heading">
-      <div>
-        <div className="section-kicker">PERFORMANCE</div>
-        <h2>Latest completed performance</h2>
-      </div>
-      <span className="soft-tag">No reports yet</span>
-    </div>
 
-    <div className="empty-performance">
-      <div className="empty-chart-icon">
-        <ChartNoAxesColumnIncreasing size={28} />
-      </div>
-      <h3>No completed interviews yet</h3>
-      <p className="muted">
-        Your performance breakdown will appear here after you complete
-        your first interview.
-      </p>
-    </div>
-
-    <div className="chart-footer">
-      <span className="muted">Your interview scores will be tracked here.</span>
-    </div>
-  </div> */}
   <div className="card performance-card">
   <div className="card-heading">
     <div>
@@ -1683,37 +1525,7 @@ if (hasResume && !hasJobDescription) {
   </div>
 </div>
 
-  {/* <div className="card coaching-card">
-    <div className="coaching-header">
-      <div className="coaching-icon">
-        <Sparkles size={18} />
-      </div>
-      <div>
-        <div className="section-kicker">PERSONALIZED INSIGHT</div>
-        <h2>Your personal feedback</h2>
-      </div>
-    </div>
-
-    <p className="muted">
-      Personalized recommendations based on your interview performance.
-    </p>
-
-    <div className="empty-insight">
-      <Sparkles size={22} />
-      <h3>Insights are coming soon</h3>
-      <p className="muted">
-        Complete an interview to receive feedback on your strengths
-        and areas for improvement.
-      </p>
-    </div>
-
-    <button
-      className="outline-button"
-      onClick={() => setActive('New interview')}
-    >
-      Start an interview <ArrowRight size={15} />
-    </button>
-  </div> */}
+ 
   
 <div className="card coaching-card">
   <div className="coaching-header">
@@ -1909,7 +1721,256 @@ if (hasResume && !hasJobDescription) {
             <span className="footer-divider">·</span>
             <span>Practice, learn, improve.</span>
           </footer>
-          </> : active === 'Resumes' ? <section className="inner-page">
+       
+</>
+ : active === 'report' ? (
+  <section className="inner-page report-page">
+
+    <div className="page-heading">
+      <div>
+        <div className="eyebrow">
+          INTERVIEW PERFORMANCE
+          <span className="eyebrow-line" />
+        </div>
+
+        <h1>Your Final Report</h1>
+
+        <p className="subtitle">
+          Your interview performance and feedback
+        </p>
+      </div>
+
+      <button
+        className="outline-button"
+        onClick={() => setActive('New interview')}
+      >
+        <ArrowLeft size={16} /> Back to interview
+      </button>
+    </div>
+
+    
+<div className="report-page-content">
+
+  {reportLoading ? (
+    <div className="report-loading">
+      <Sparkles size={32} />
+      <h3>Generating your final report...</h3>
+      <p className="muted">
+        Please wait while we evaluate your interview.
+      </p>
+    </div>
+  ) : reportError ? (
+    <div className="report-error">
+      <p className="error-message">{reportError}</p>
+      <button
+        className="primary-button"
+        onClick={() => fetchFinalReport(createdInterview.id)}
+      >
+        Retry report
+      </button>
+    </div>
+  ) : finalReport ? (
+    <div className="final-report-preview">
+
+
+{/* 01 - Overall Score */}
+      <section className="report-block report-overall-block">
+        <div className="report-section-heading">
+          <span>01.</span>
+          <h2>Overall Score</h2>
+        </div>
+
+        <div className="report-score-area">
+          <div className="report-score-circle">
+            <div className="report-score-inner">
+              <strong>
+                {finalReport.overall_score ?? '—'}
+              </strong>
+              <span>OUT OF 100</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      {/* 02 - Questions & Evaluation */}
+      <section className="report-block">
+        <div className="report-section-heading">
+          <span>02.</span>
+          <h2>
+            Interview Q&A & Evaluation
+            ({finalReport.questions?.length || 0} Questions)
+          </h2>
+        </div>
+
+        <div className="report-qa-grid">
+          {finalReport.questions?.map((question, index) => (
+            <article className="report-qa-card" key={question.id ?? index}>
+              <div className="report-qa-main">
+                <h3>
+                  Q{question.sequence_number ?? index + 1}: {question.text}
+                </h3>
+
+                <div className="report-answer">
+                  <strong>Your Answer</strong>
+                  <p>
+                    {question.answer?.text || 'No answer provided.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="report-qa-score">
+                <span>Score</span>
+                <strong>{question.answer?.score ?? '—'}</strong>
+                <small>/10</small>
+              </div>
+
+{question.answer?.score < 9 && (
+
+              <div className="report-better-answer">
+                <span>Better Answer</span>
+                <p>
+                  {question.answer?.better_answer ||
+                    'No suggested answer available.'}
+                </p>
+              </div>
+)}
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* 03 - Interview Summary */}
+      <section className="report-block">
+        <div className="report-section-heading">
+          <span>03.</span>
+          <h2>Interview Summary</h2>
+        </div>
+
+        <div className="report-summary-grid">
+          <article className="report-summary-card">
+            <h3>Interview Overview</h3>
+            <p>
+              {finalReport.summary || 'No summary available.'}
+            </p>
+          </article>
+
+          <article className="report-summary-card">
+            <h3>Performance Highlights</h3>
+
+            <div className="report-highlight-list">
+              {finalReport.dimensions?.length > 0 ? (
+                finalReport.dimensions.map((item, index) => (
+                  <div key={item.dimension ?? index}>
+                    <strong>
+                      {item.dimension?.replaceAll('_', ' ')}
+                    </strong>
+                    <span>{item.score ?? 0}/100</span>
+                  </div>
+                ))
+              ) : (
+                <p>No performance details available.</p>
+              )}
+            </div>
+          </article>
+        </div>
+      </section>
+
+      
+
+      {/* 04 - Improvement Areas */}
+      <section className="report-block">
+        <div className="report-section-heading">
+          <span>04.</span>
+          <h2>Improvement Areas</h2>
+        </div>
+
+        <div className="report-improvements-grid">
+          {finalReport.improvement_areas?.length > 0 ? (
+            finalReport.improvement_areas.map((item, index) => (
+              <article className="report-improvement-card" key={index}>
+                <h3>
+                  {typeof item === 'string'
+                    ? `Improvement ${index + 1}`
+                    : item.area || item.name || `Improvement ${index + 1}`}
+                </h3>
+
+                <p>
+                  {typeof item === 'string'
+                    ? item
+                    : item.recommendation ||
+                      item.description ||
+                      'Review this area to improve your performance.'}
+                </p>
+              </article>
+            ))
+          ) : (
+            <p className="muted">
+              No improvement areas available.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* 05 - Dimensions */}
+      <section className="report-block">
+        <div className="report-section-heading">
+          <span>05.</span>
+          <h2>Key Dimensions Scores & Evidence</h2>
+        </div>
+
+        <div className="report-dimensions-grid">
+          {finalReport.dimensions?.length > 0 ? (
+            finalReport.dimensions.map((item, index) => (
+              <article
+                className="report-dimension-card"
+                key={item.dimension ?? index}
+              >
+                <h3>
+                  {item.dimension?.replaceAll('_', ' ') || 'Dimension'}
+                </h3>
+
+                <div className="report-dimension-score">
+                  <strong>{item.score ?? 0}</strong>
+                  <span>/5</span>
+                </div>
+
+                <div className="report-dimension-progress">
+                  <div
+                    style={{
+                      width: `${Math.max(0, Math.min(5, item.score ?? 0)) * 20}%`
+                    }}
+                  />
+                </div>
+
+                <div className="report-evidence">
+                  <strong>Evidence</strong>
+                  <p>
+                    {item.evidence || 'No evidence available.'}
+                  </p>
+                </div>
+              </article>
+            ))
+          ) : (
+            <p className="muted">
+              No performance dimensions available.
+            </p>
+          )}
+        </div>
+      </section>
+
+    </div>
+  ) : (
+    <p className="muted">No report available.</p>
+  )}
+
+</div>
+
+  </section>
+
+       
+       
+     ) : active === 'Resumes' ? <section className="inner-page">
             <div className="page-heading">
               <div><div className="eyebrow">DOCUMENT LIBRARY <span className="eyebrow-line" /></div><h1>Resumes</h1><p className="subtitle">Upload your experience. Sparr uses extracted skills to tailor technical questions.</p></div>
             </div>
@@ -2401,17 +2462,7 @@ if (hasResume && !hasJobDescription) {
       <Sparkles size={24} />
     </div>
 
-    {/* <h2>
-      {createdInterview.status === 'ready'
-        ? 'Your interview is ready!'
-        : 'Preparing your interview...'}
-    </h2>
-
-    <p className="muted">
-      {createdInterview.status === 'ready'
-        ? 'Answer the questions below to practice for your target role.'
-        : 'Sparr is generating your personalized interview questions.'}
-    </p> */}
+  
     <h2>
   {createdInterview.status === 'ready'
     ? 'Your interview is ready!'
@@ -2477,18 +2528,32 @@ if (hasResume && !hasJobDescription) {
 
   
  
+{/* <button
+  className="primary-button"
+ 
+  onClick={() => {
+  if (finalReport) {
+    setActive('report');
+  } else {
+    fetchFinalReport(createdInterview.id);
+  }
+}}
+>
+  View Final Report
+</button> */}
 <button
   className="primary-button"
   onClick={() => {
-    if (finalReport) {
-      setShowReportModal(true);
-    } else {
+    if (createdInterview?.id) {
       fetchFinalReport(createdInterview.id);
     }
   }}
+  disabled={reportLoading || !createdInterview?.id}
 >
-  View Final Report
+  {reportLoading ? 'Loading Report...' : 'View Final Report'}
 </button>
+
+  
 
 {/* Final Report Modal */}
 {showReportModal && (
