@@ -99,6 +99,11 @@ const [averageScoreCount, setAverageScoreCount] = useState(0);
 
 const [failedInterviewId, setFailedInterviewId] = useState(null);
 
+const [selectedInterview, setSelectedInterview] = useState(null);
+const [interviewDetailReport, setInterviewDetailReport] = useState(null);
+const [detailsLoading, setDetailsLoading] = useState(false);
+const [detailsError, setDetailsError] = useState('');
+
   const getAuthHeaders = () => {
     const token = sessionStorage.getItem('sparr_token');
     if (!token) throw new Error('Your session has expired. Please sign in again.');
@@ -213,6 +218,111 @@ const fetchFinalReport = async (interviewId) => {
   }
 };
 
+// const fetchInterviewDetails = async (interview) => {
+//   try {
+//     setSelectedInterview(interview);
+//     setActive('interview-details');
+
+//     setDetailsLoading(true);
+//     setDetailsError('');
+//     setInterviewQuestions([]);
+//     setInterviewDetailReport(null);
+
+//     // Get interview questions and answers
+//     const questionsResponse = await fetch(
+//       `${API_BASE_URL}/interviews/${interview.id}/questions`,
+//       {
+//         method: 'GET',
+//         headers: getAuthHeaders(),
+//       }
+//     );
+
+//     const questionsResult = await questionsResponse.json();
+
+//     if (!questionsResponse.ok) {
+//       throw new Error(
+//         questionsResult.message || 'Failed to load interview questions.'
+//       );
+//     }
+
+//     setInterviewQuestions(questionsResult.data ?? questionsResult);
+
+//     // Get final report
+//     const reportResponse = await fetch(
+//       `${API_BASE_URL}/interviews/${interview.id}/report`,
+//       {
+//         method: 'GET',
+//         headers: getAuthHeaders(),
+//       }
+//     );
+
+//     const reportResult = await reportResponse.json();
+
+//     if (reportResponse.ok) {
+//       setInterviewDetailReport(reportResult.data ?? reportResult);
+//     } else {
+//       console.log('Report unavailable:', reportResult.message);
+//     }
+
+//   } catch (error) {
+//     console.error('Interview details error:', error);
+//     setDetailsError(error.message);
+//   } finally {
+//     setDetailsLoading(false);
+//   }
+// };
+
+const fetchInterviewDetails = async (interview) => {
+  try {
+    setSelectedInterview(interview);
+    setActive('interview-details');
+
+    setDetailsLoading(true);
+    setDetailsError('');
+    setInterviewQuestions([]);
+    setInterviewDetailReport(null);
+
+    // Fetch questions and answers
+    const questionsResponse = await fetch(
+      `${API_BASE_URL}/interviews/${interview.id}/questions`,
+      {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      }
+    );
+
+    const questionsResult = await questionsResponse.json();
+
+    if (!questionsResponse.ok) {
+      throw new Error(
+        questionsResult.message || 'Failed to load interview questions.'
+      );
+    }
+
+    setInterviewQuestions(questionsResult.data ?? []);
+
+    // Fetch final report
+    const reportResponse = await fetch(
+      `${API_BASE_URL}/interviews/${interview.id}/report`,
+      {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      }
+    );
+
+    const reportResult = await reportResponse.json();
+
+    if (reportResponse.ok) {
+      setInterviewDetailReport(reportResult.data ?? null);
+    }
+
+  } catch (error) {
+    console.error('Interview details error:', error);
+    setDetailsError(error.message);
+  } finally {
+    setDetailsLoading(false);
+  }
+};
   const fetchResumes = async () => {
     setResumesLoading(true);
     setResumesError('');
@@ -1675,6 +1785,8 @@ if (hasResume && !hasJobDescription) {
           <div
             className="recent-interview-item"
             key={interview.id}
+              onClick={() => fetchInterviewDetails(interview)}
+  style={{ cursor: 'pointer' }}
           >
             <div className="recent-interview-info">
               <h3>Interview #{interview.id}</h3>
@@ -1759,16 +1871,27 @@ if (hasResume && !hasJobDescription) {
         Please wait while we evaluate your interview.
       </p>
     </div>
+ 
   ) : reportError ? (
-    <div className="report-error">
-      <p className="error-message">{reportError}</p>
+  <div className="report-error">
+    <p className="error-message">{reportError}</p>
+
+    {reportError.toLowerCase().includes('failed') ? (
+      <button
+        className="primary-button"
+        onClick={() => setActive('New interview')}
+      >
+        Start New Interview
+      </button>
+    ) : (
       <button
         className="primary-button"
         onClick={() => fetchFinalReport(createdInterview.id)}
       >
-        Retry report
+        Retry Report
       </button>
-    </div>
+    )}
+  </div>
   ) : finalReport ? (
     <div className="final-report-preview">
 
@@ -1969,8 +2092,186 @@ if (hasResume && !hasJobDescription) {
   </section>
 
        
-       
-     ) : active === 'Resumes' ? <section className="inner-page">
+ ) : active === 'interview-details' ? (
+  <section className="inner-page report-page">
+
+    <div className="page-heading">
+      <div>
+        <div className="eyebrow">
+          INTERVIEW DETAILS
+          <span className="eyebrow-line" />
+        </div>
+
+        <h1>Interview #{selectedInterview?.id}</h1>
+
+        <p className="subtitle">
+          Complete interview history, answers and evaluation
+        </p>
+      </div>
+
+      <button
+        className="text-button"
+        onClick={() => setActive('Interview history')}
+      >
+        <ArrowLeft size={16} /> Back to history
+      </button>
+    </div>
+
+    {detailsLoading ? (
+      <div className="report-loading">
+        Loading interview details...
+      </div>
+    ) : detailsError ? (
+      <div className="report-error">
+        {detailsError}
+      </div>
+    ) : (
+      <div className="report-page-content">
+
+        {/* Interview Information */}
+        <section className="report-block">
+          <h2>Interview Information</h2>
+
+          <p>
+            <strong>Date:</strong>{' '}
+            {selectedInterview?.started_at
+              ? new Date(selectedInterview.started_at).toLocaleString()
+              : 'Date unavailable'}
+          </p>
+
+          <p>
+            <strong>Status:</strong>{' '}
+            {selectedInterview?.status?.replaceAll('_', ' ')}
+          </p>
+
+          <p>
+            <strong>Total Questions:</strong>{' '}
+            {interviewQuestions.length}
+          </p>
+        </section>
+
+        {/* Questions and Answers */}
+        <section className="report-block">
+          <h2>Questions & Answers</h2>
+
+          {interviewQuestions.length === 0 ? (
+            <p>No questions available for this interview.</p>
+          ) : (
+            interviewQuestions.map((question) => (
+              <div
+                className="report-qa-item"
+                key={question.id}
+              >
+                <h3>
+                  Question {question.sequence_number}
+                </h3>
+
+                <p>{question.text}</p>
+
+                <div>
+                  <strong>Your Answer</strong>
+                  <p>
+                    {question.answer?.text || 'No answer provided'}
+                  </p>
+                </div>
+
+                {question.answer && (
+                  <>
+                    <p>
+                      <strong>Evaluation Status:</strong>{' '}
+                      {question.answer.evaluation_status || 'Unavailable'}
+                    </p>
+
+                    <p>
+                      <strong>Score:</strong>{' '}
+                      {question.answer.score ?? 'Not evaluated'}
+                    </p>
+
+                    {question.answer.better_answer && (
+                      <div>
+                        <strong>Suggested Better Answer</strong>
+                        <p>{question.answer.better_answer}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ))
+          )}
+        </section>
+
+        {/* Final Report */}
+        {interviewDetailReport && (
+          <>
+            <section className="report-block">
+              <h2>Final Report</h2>
+
+              <p>
+                <strong>Overall Score:</strong>{' '}
+                {interviewDetailReport.overall_score ?? 'N/A'}
+              </p>
+
+              <p>
+                <strong>Summary:</strong>
+              </p>
+
+              <p>{interviewDetailReport.summary}</p>
+            </section>
+
+            {/* Improvement Areas */}
+            <section className="report-block">
+              <h2>Improvement Areas</h2>
+
+              {interviewDetailReport.improvement_areas?.length ? (
+                interviewDetailReport.improvement_areas.map((area, index) => (
+                  <p key={index}>
+                    {typeof area === 'string'
+                      ? area
+                      : area.name || area.description || JSON.stringify(area)}
+                  </p>
+                ))
+              ) : (
+                <p>No improvement areas available.</p>
+              )}
+            </section>
+
+            {/* Dimensions */}
+            <section className="report-block">
+              <h2>Performance Dimensions</h2>
+
+              {interviewDetailReport.dimensions?.map((dimension, index) => (
+                <div key={index}>
+                  <h3>
+                    {dimension.dimension?.replaceAll('_', ' ')}
+                  </h3>
+
+                  <p>
+                    <strong>Score:</strong> {dimension.score}
+                  </p>
+
+                  <p>{dimension.evidence}</p>
+                </div>
+              ))}
+            </section>
+          </>
+        )}
+
+        {!interviewDetailReport && (
+          <section className="report-block">
+            <h2>Final Report</h2>
+            <p>
+              A final report is not available for this interview.
+            </p>
+          </section>
+        )}
+
+      </div>
+    )}
+  </section>
+
+   
+   
+   ) : active === 'Resumes' ? <section className="inner-page">
             <div className="page-heading">
               <div><div className="eyebrow">DOCUMENT LIBRARY <span className="eyebrow-line" /></div><h1>Resumes</h1><p className="subtitle">Upload your experience. Sparr uses extracted skills to tailor technical questions.</p></div>
             </div>
@@ -2385,7 +2686,10 @@ if (hasResume && !hasJobDescription) {
   ) : (
     <div className="history-list">
       {interviews.map(interview => (
-        <div className="history-item" key={interview.id}>
+        <div className="history-item" key={interview.id} 
+           onClick={() => fetchInterviewDetails(interview)}
+
+    style={{ cursor: 'pointer' }}>
           <div className="history-item-info">
             <h3>Interview #{interview.id}</h3>
 

@@ -1655,6 +1655,306 @@ button:focus-visible { outline: 3px solid #aaa1ff; outline-offset: 3px; }
 }
 
 
+
+/* ================================
+   INTERVIEW DETAILS PAGE
+================================ */
+
+.report-page {
+  width: 100%;
+  max-width: 1150px;
+  margin: 0 auto;
+  padding: 35px 28px 60px;
+  color: #202938;
+}
+
+/* Page Heading */
+
+.report-page .page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.report-page .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.report-page .page-heading h1 {
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -0.8px;
+  margin: 0 0 9px;
+  color: #172033;
+}
+
+.report-page .subtitle {
+  color: #7b8494;
+  font-size: 14px;
+  margin: 0;
+}
+
+.report-page .text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.report-page .text-button:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+/* Main Content */
+
+.report-page-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Sections */
+
+.report-page .report-block {
+  background: #fff;
+  border: 1px solid #e8edf3;
+  border-radius: 14px;
+  padding: 25px;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+.report-page .report-block > h2 {
+  font-size: 19px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 22px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+/* Interview Information */
+
+.report-page .report-block:first-child > p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 14px;
+  margin: 12px 0;
+}
+
+.report-page .report-block:first-child > p strong {
+  color: #334155;
+  min-width: 125px;
+}
+
+/* Questions & Answers */
+
+.report-page .report-qa-item {
+  background: #fafbfc;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+  padding: 22px;
+  margin-bottom: 18px;
+  transition: border-color 0.2s ease;
+}
+
+.report-page .report-qa-item:last-child {
+  margin-bottom: 0;
+}
+
+.report-page .report-qa-item:hover {
+  border-color: #cbd5e1;
+}
+
+.report-page .report-qa-item h3 {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 12px;
+}
+
+.report-page .report-qa-item > p:first-of-type {
+  color: #253247;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.8;
+  margin: 0 0 22px;
+}
+
+/* Answer Blocks */
+
+.report-page .report-qa-item > div {
+  margin-top: 16px;
+}
+
+.report-page .report-qa-item > div > strong,
+.report-page .report-qa-item > strong {
+  display: block;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 9px;
+}
+
+.report-page .report-qa-item > div > p {
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 0;
+}
+
+/* Evaluation Details */
+
+.report-page .report-qa-item > p:not(:first-of-type) {
+  color: #64748b;
+  font-size: 13px;
+  margin: 12px 0;
+}
+
+.report-page .report-qa-item > p strong {
+  color: #334155;
+}
+
+/* Final Report */
+
+.report-page .report-block p {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.report-page .report-block p strong {
+  color: #334155;
+}
+
+/* Improvement Areas */
+
+.report-page .improvement-item {
+  padding: 17px 18px;
+  background: #fffaf2;
+  border: 1px solid #f5e6c9;
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+
+.report-page .improvement-item:last-child {
+  margin-bottom: 0;
+}
+
+.report-page .improvement-item h3 {
+  color: #925d16;
+  font-size: 14px;
+  margin: 0 0 9px;
+}
+
+.report-page .improvement-item p {
+  margin: 0;
+}
+
+/* Performance Dimensions */
+
+.report-page .dimension-item {
+  padding: 17px 0;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.report-page .dimension-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.report-page .dimension-item h3 {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: capitalize;
+  margin: 0 0 10px;
+}
+
+.report-page .dimension-score {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  background: #eef2ff;
+  color: #4f46a5;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 9px;
+}
+
+/* Loading & Error */
+
+.report-page .report-loading {
+  text-align: center;
+  padding: 55px 20px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.report-page .report-error {
+  padding: 25px;
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+  color: #b42318;
+  border-radius: 12px;
+}
+
+/* Responsive */
+
+@media (max-width: 650px) {
+  .report-page {
+    padding: 24px 15px 40px;
+  }
+
+  .report-page .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .report-page .page-heading h1 {
+    font-size: 25px;
+  }
+
+  .report-page .report-block {
+    padding: 18px;
+  }
+
+  .report-page .report-qa-item {
+    padding: 16px;
+  }
+
+  .report-page .report-block:first-child > p {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+
 .profile-settings {
   display: grid;
   gap: 20px;
