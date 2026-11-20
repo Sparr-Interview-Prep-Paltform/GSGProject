@@ -2716,3 +2716,18 @@ tr:last-child td { border-bottom:0; }
   line-height: 1.7;
   color: #64748b;
 }
+.report-summary-grid {
+  display: flex;
+  justify-content: center;
+}
+
+.report-summary-card {
+  width: 50%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+  .report-summary-card {
+    width: 100%;
+  }
+}

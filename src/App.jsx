@@ -1375,9 +1375,9 @@ if (hasResume && !hasJobDescription) {
         </aside>
 
         <main className="main-content">
-        {/* <button onClick={() => fetchFinalReport(50)}>
+        <button onClick={() => fetchFinalReport(50)}>
                    test
-          </button> */}
+          </button>
           {active === 'Dashboard' ? <>
           <div className="page-heading">
             <div>
@@ -2095,34 +2095,15 @@ if (hasResume && !hasJobDescription) {
 
     {/* Summary */}
     <article className="report-summary-card">
-      <h3>Summary</h3>
+      {/* <h3>Summary</h3> */}
       <p>
         {finalReport.summary || 'No summary available.'}
       </p>
     </article>
 
-    {/* Strengths */}
-    <article className="report-summary-card">
-      <h3>Strengths</h3>
+  
 
-      {finalReport.strengths?.length > 0 ? (
-        <ul className="report-strength-list">
-          {finalReport.strengths.map((item, index) => (
-            <li key={index}>{item}</li>
-          ))}
-        </ul>
-      ) : (
-        <p>No strengths available.</p>
-      )}
-    </article>
-
-    {/* Job Relevance */}
-    <article className="report-summary-card">
-      <h3>Job Relevance</h3>
-      <p>
-        {finalReport.job_relevance || 'No job relevance information available.'}
-      </p>
-    </article>
+  
 
   </div>
 </section>
