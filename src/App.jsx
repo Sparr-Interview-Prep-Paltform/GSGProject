@@ -104,6 +104,8 @@ const [interviewDetailReport, setInterviewDetailReport] = useState(null);
 const [detailsLoading, setDetailsLoading] = useState(false);
 const [detailsError, setDetailsError] = useState('');
 
+const [expandedQuestion, setExpandedQuestion] = useState(null);
+
   const getAuthHeaders = () => {
     const token = sessionStorage.getItem('sparr_token');
     if (!token) throw new Error('Your session has expired. Please sign in again.');
@@ -208,6 +210,19 @@ const fetchFinalReport = async (interviewId) => {
   dimensions: report.dimensions,
 });
       setFinalReport(report);
+//       setFinalReport({
+//   ...result.data,
+//   discrepancy_flag: [
+//     {
+//       description:
+//         "The candidate's resume claims 3 years of Backend development experience, but the candidate stated having no professional Backend experience."
+//     },
+//     {
+//       description:
+//         "The resume lists FastAPI as a strong technical skill, while the candidate stated never having used FastAPI."
+//     }
+//   ]
+// });
       return;
     }
   } catch (error) {
@@ -1684,10 +1699,14 @@ if (hasResume && !hasJobDescription) {
                   {String(index + 1).padStart(2, '0')}
                 </div>
                 <p>
-                  {typeof area === 'string'
-                    ? area
-                    : area.description || area.name || JSON.stringify(area)}
-                </p>
+  {typeof area === 'string'
+    ? area
+    : area.description ||
+      area.name ||
+      area.recommendation ||
+      area.area ||
+      'No details available.'}
+</p>
               </div>
             ))
           ) : (
@@ -1917,7 +1936,7 @@ if (hasResume && !hasJobDescription) {
 
 
       {/* 02 - Questions & Evaluation */}
-      <section className="report-block">
+      {/* <section className="report-block">
         <div className="report-section-heading">
           <span>02.</span>
           <h2>
@@ -1961,10 +1980,76 @@ if (hasResume && !hasJobDescription) {
             </article>
           ))}
         </div>
-      </section>
+      </section> */}
+
+<section className="report-block">
+  <div className="report-section-heading">
+    <span>02.</span>
+    <h2>
+      Interview Q&A & Evaluation
+      ({finalReport.questions?.length || 0} Questions)
+    </h2>
+  </div>
+
+  <div className="report-qa-list">
+    {finalReport.questions?.map((question, index) => {
+      const questionId = question.id ?? index;
+      const isExpanded = expandedQuestion === questionId;
+
+      return (
+        <article className="report-qa-card" key={questionId}>
+          <div
+            className="report-qa-header"
+            onClick={() =>
+              setExpandedQuestion(isExpanded ? null : questionId)
+            }
+          >
+            <div className="report-qa-question">
+              <h3>
+                Q{question.sequence_number ?? index + 1}: {question.text}
+              </h3>
+            </div>
+
+            <div className="report-qa-score">
+              <span>Score</span>
+              <strong>{question.answer?.score ?? '—'}</strong>
+              <small>/10</small>
+            </div>
+
+            <span className="report-qa-toggle">
+              {isExpanded ? '−' : '+'}
+            </span>
+          </div>
+
+          {isExpanded && (
+            <div className="report-qa-details">
+              <div className="report-answer">
+                <strong>Your Answer</strong>
+                <p>
+                  {question.answer?.text || 'No answer provided.'}
+                </p>
+              </div>
+
+              {question.answer?.score < 9 && (
+                <div className="report-better-answer">
+                  <strong>Better Answer</strong>
+                  <p>
+                    {question.answer?.better_answer ||
+                      'No suggested answer available.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </article>
+      );
+    })}
+  </div>
+</section>
+
 
       {/* 03 - Interview Summary */}
-      <section className="report-block">
+      {/* <section className="report-block">
         <div className="report-section-heading">
           <span>03.</span>
           <h2>Interview Summary</h2>
@@ -1997,9 +2082,55 @@ if (hasResume && !hasJobDescription) {
             </div>
           </article>
         </div>
-      </section>
+      </section> */}
 
       
+<section className="report-block">
+  <div className="report-section-heading">
+    <span>03.</span>
+    <h2>Interview Summary</h2>
+  </div>
+
+  <div className="report-summary-grid">
+
+    {/* Summary */}
+    <article className="report-summary-card">
+      <h3>Summary</h3>
+      <p>
+        {finalReport.summary || 'No summary available.'}
+      </p>
+    </article>
+
+    {/* Strengths */}
+    <article className="report-summary-card">
+      <h3>Strengths</h3>
+
+      {finalReport.strengths?.length > 0 ? (
+        <ul className="report-strength-list">
+          {finalReport.strengths.map((item, index) => (
+            <li key={index}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>No strengths available.</p>
+      )}
+    </article>
+
+    {/* Job Relevance */}
+    <article className="report-summary-card">
+      <h3>Job Relevance</h3>
+      <p>
+        {finalReport.job_relevance || 'No job relevance information available.'}
+      </p>
+    </article>
+
+  </div>
+</section>
+
+
+
+
+
 
       {/* 04 - Improvement Areas */}
       <section className="report-block">
@@ -2081,6 +2212,34 @@ if (hasResume && !hasJobDescription) {
           )}
         </div>
       </section>
+{/* 06 - Discrepancies */}
+{finalReport.discrepancy_flag?.length > 0 && (
+  <section className="report-block">
+    <div className="report-section-heading">
+      <span>06.</span>
+      <h2>
+        Discrepancies ({finalReport.discrepancy_flag.length})
+      </h2>
+    </div>
+
+    <div className="report-discrepancy-list">
+      {finalReport.discrepancy_flag.map((item, index) => (
+        <article className="report-discrepancy-card" key={index}>
+          <h3>
+            Discrepancy #{index + 1}
+          </h3>
+
+          <p>
+            {typeof item === 'string'
+              ? item
+              : item.description || item.reason || JSON.stringify(item)}
+          </p>
+        </article>
+      ))}
+    </div>
+  </section>
+)}
+
 
     </div>
   ) : (
@@ -2219,7 +2378,7 @@ if (hasResume && !hasJobDescription) {
             </section>
 
             {/* Improvement Areas */}
-            <section className="report-block">
+            {/* <section className="report-block">
               <h2>Improvement Areas</h2>
 
               {interviewDetailReport.improvement_areas?.length ? (
@@ -2233,8 +2392,56 @@ if (hasResume && !hasJobDescription) {
               ) : (
                 <p>No improvement areas available.</p>
               )}
-            </section>
+            </section> */}
+            {/* Improvement Areas */}
+{/* <section className="report-block">
+  <h2>Improvement Areas</h2>
 
+  <div className="improvement-areas-list">
+    {interviewDetailReport.improvement_areas?.length ? (
+      interviewDetailReport.improvement_areas.map((area, index) => (
+        <article className="improvement-area-item" key={index}>
+          <h3>Improvement {index + 1}</h3>
+
+          <p>
+            {typeof area === 'string'
+              ? area
+              : area.name || area.description || area.recommendation || 'No details available.'}
+          </p>
+        </article>
+      ))
+    ) : (
+      <p>No improvement areas available.</p>
+    )}
+  </div>
+</section> */}
+<section className="report-block">
+  <h2>Improvement Areas</h2>
+
+  <div className="improvement-list">
+    {interviewDetailReport.improvement_areas?.length > 0 ? (
+      interviewDetailReport.improvement_areas.map((area, index) => (
+        <div className="improvement-item" key={index}>
+          <div className="improvement-number">
+            {String(index + 1).padStart(2, '0')}
+          </div>
+
+          <p>
+            {typeof area === 'string'
+              ? area
+              : area.description ||
+                area.name ||
+                area.recommendation ||
+                area.area ||
+                'No details available.'}
+          </p>
+        </div>
+      ))
+    ) : (
+      <p>No improvement areas available.</p>
+    )}
+  </div>
+</section>
             {/* Dimensions */}
             <section className="report-block">
               <h2>Performance Dimensions</h2>
@@ -2960,7 +3167,7 @@ if (hasResume && !hasJobDescription) {
             </section>
 
             {/* Improvement Areas */}
-<section className="report-section">
+      <section className="report-section">
   <h3>Improvement Areas</h3>
 
   {finalReport.improvement_areas?.length > 0 ? (
