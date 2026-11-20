@@ -1841,7 +1841,8 @@ if (hasResume && !hasJobDescription) {
   style={{ cursor: 'pointer' }}
           >
             <div className="recent-interview-info">
-              <h3>Interview #{interview.id}</h3>
+              <h3> {interview.job_description_title ||interview.resume_title|| `Interview #${interview.id}`}
+</h3>
 
               <p>
                 {interview.started_at
@@ -2275,7 +2276,7 @@ if (hasResume && !hasJobDescription) {
           <span className="eyebrow-line" />
         </div>
 
-        <h1>Interview #{selectedInterview?.id}</h1>
+        <h1>{selectedInterview.job_description_title ||selectedInterview.resume_title|| `Interview #${selectedInterview.id}`}</h1>
 
         <p className="subtitle">
           Complete interview history, answers and evaluation
@@ -2717,15 +2718,24 @@ if (hasResume && !hasJobDescription) {
       {roadmapError || 'Roadmap generation failed.'}
     </p>
 
-
-    <button
+{roadmapStatus === 'failed' && (
+  <button
+    className="primary-button"
+    onClick={handleRetryRoadmap}
+    disabled={!roadmapAnalysisId}
+  >
+    <RefreshCw size={16} />
+    Retry Analysis
+  </button>
+)}
+    {/* <button
         className="primary-button"
   onClick={handleRetryRoadmap}
   disabled={!roadmapAnalysisId || roadmapStatus === 'processing'}
 >
   <RefreshCw size={16} />
   Retry Analysis
-</button>
+</button> */}
   </div>
 ) 
                  : roadmapStatus === 'completed' ? (
@@ -2943,8 +2953,9 @@ if (hasResume && !hasJobDescription) {
 
     style={{ cursor: 'pointer' }}>
           <div className="history-item-info">
-            <h3>Interview #{interview.id}</h3>
-
+<h3>
+  {interview.job_description_title ||interview.resume_title|| `Interview #${interview.id}`}
+</h3>
             <p>
               {interview.status.replace('_', ' ')}
             </p>
