@@ -5,7 +5,7 @@ import { ChartNoAxesColumnIncreasing } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import {
   LayoutDashboard, FileText, BriefcaseBusiness, History, Settings,Map,
-  BookOpen, Plus, ArrowUpRight, ArrowRight, Menu, X, ChevronRight,
+  BookOpen, Plus, ArrowUpRight, ArrowRight, Menu, X, ChevronRight,RefreshCw,
   CircleCheck, LockKeyhole, Sparkles, Search, Pencil, Trash2, Building2, XCircle,ArrowLeft
 } from 'lucide-react';
 
@@ -105,6 +105,7 @@ const [detailsLoading, setDetailsLoading] = useState(false);
 const [detailsError, setDetailsError] = useState('');
 
 const [expandedQuestion, setExpandedQuestion] = useState(null);
+const [roadmapAnalysisId, setRoadmapAnalysisId] = useState(null);
 
   const getAuthHeaders = () => {
     const token = sessionStorage.getItem('sparr_token');
@@ -728,6 +729,8 @@ setRoadmapStatus(data.data?.roadmap_status || null);
 };
 
 const fetchRoadmapStatus = async (jobId, resumeId) => {
+    console.log('fetchRoadmapStatus called', jobId, resumeId);
+
   try {
     const response = await fetch(
       `${API_BASE_URL}/job-descriptions/${jobId}/gap-analysis/${resumeId}`,
@@ -738,14 +741,17 @@ const fetchRoadmapStatus = async (jobId, resumeId) => {
     );
 
     const data = await response.json().catch(() => ({}));
-
+console.log('API response:', data);
     if (!response.ok) {
       throw new Error(
         data.message || `Failed to load roadmap (${response.status}).`
       );
     }
+    setRoadmapAnalysisId(data.data?.id || null);
 
     setRoadmap(data.data?.roadmap || []);
+    console.log('Roadmap data:', data.data?.roadmap);
+console.log('Roadmap length:', data.data?.roadmap?.length);
     setRoadmapStatus(data.data?.roadmap_status || null);
 
     if (data.data?.roadmap_status === 'failed') {
@@ -755,6 +761,33 @@ const fetchRoadmapStatus = async (jobId, resumeId) => {
     }
   } catch (err) {
     setRoadmapError(err.message || 'Failed to check roadmap status.');
+  }
+};
+const handleRetryRoadmap = async () => {
+  try {
+    setRoadmapStatus('processing');
+    setRoadmapError('');
+    setRoadmap([]);
+
+    const response = await fetch(
+      `${API_BASE_URL}/gap-analyses/${roadmapAnalysisId}/roadmap/retry`,
+      {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to retry roadmap.');
+    }
+
+    await fetchRoadmapStatus(selectedJobId, selectedResume.id);
+
+  } catch (err) {
+    setRoadmapStatus('failed');
+    setRoadmapError(err.message || 'Failed to retry roadmap.');
   }
 };
 
@@ -1375,9 +1408,9 @@ if (hasResume && !hasJobDescription) {
         </aside>
 
         <main className="main-content">
-        <button onClick={() => fetchFinalReport(50)}>
+        {/* <button onClick={() => fetchFinalReport(50)}>
                    test
-          </button>
+          </button> */}
           {active === 'Dashboard' ? <>
           <div className="page-heading">
             <div>
@@ -2639,6 +2672,18 @@ if (hasResume && !hasJobDescription) {
                     PERSONALIZED LEARNING PLAN
                     <span className="eyebrow-line" />
                   </div>
+
+                  {/* <button
+  type="button"
+  onClick={() => {
+    setRoadmapAnalysisId(5); // ID of failed analysis
+    setRoadmapStatus('failed');
+    setRoadmapError('Failed to generate the learning roadmap.');
+  }}
+>
+  Test Failed Roadmap
+</button> */}
+              
                   <h1>Skill Roadmap</h1>
                   <p className="subtitle">
                     Build the skills you're missing for your target job.
@@ -2660,11 +2705,30 @@ if (hasResume && !hasJobDescription) {
                   <p className="muted">
                     Your learning roadmap is being generated...
                   </p>
-                ) : roadmapStatus === 'failed' ? (
-                  <p role="alert">
-                    {roadmapError || 'Roadmap generation failed.'}
-                  </p>
-                ) : roadmapStatus === 'completed' ? (
+                ) : 
+                // roadmapStatus === 'failed' ? (
+                //   <p role="alert">
+                //     {roadmapError || 'Roadmap generation failed.'}
+                //   </p>
+                // )
+                roadmapStatus === 'failed' ? (
+  <div className="roadmap-error">
+    <p role="alert">
+      {roadmapError || 'Roadmap generation failed.'}
+    </p>
+
+
+    <button
+        className="primary-button"
+  onClick={handleRetryRoadmap}
+  disabled={!roadmapAnalysisId || roadmapStatus === 'processing'}
+>
+  <RefreshCw size={16} />
+  Retry Analysis
+</button>
+  </div>
+) 
+                 : roadmapStatus === 'completed' ? (
                   roadmap?.length > 0 ? (
                    
 
